@@ -251,26 +251,29 @@ def buildHull( points ):
 # Merge two hulls
 def mergeHulls(left, right):
     
-    #Find the upper and lower tangents by calling respective functions
+    # Find the upper and lower tangents by calling respective functions
     upperLeft, upperRight = upperTangent(left, right)
     lowerLeft, lowerRight = lowerTangent(left, right)
     
-    #Connect the upper and lower tangents to form the final hull by setting pointers
+    # Connect the upper and lower tangents to form the final hull by setting pointers
     upperLeft.cwPoint = upperRight
     upperRight.ccwPoint = upperLeft
     lowerLeft.ccwPoint = lowerRight
     lowerRight.cwPoint = lowerLeft
     
-    #global variable that stores the upper left, upper right, lower left and lower right points of the hull used for the tangents
+    # Global variable that stores the upper left, upper right, lower left and lower right points of the hull used for the tangents
     global hull_final    
     hull_final = [upperLeft, upperRight, lowerLeft, lowerRight]
     
 
-
+# Algorithm to find the upper tangent, r: left and right point of final tangent line
 def upperTangent(left, right):
+    
+    # Find the leftmost of the right hull and the rightmost point of the left hull
     leftPoint = left[-1]
     rightPoint = right[0]
     
+    # Determine if points form a left turn, shift pointer to next point accordingly, "walking" the line up
     while True:
         if turn(leftPoint, rightPoint, rightPoint.cwPoint) == LEFT_TURN:
             rightPoint = rightPoint.cwPoint
@@ -282,11 +285,13 @@ def upperTangent(left, right):
             break
     return leftPoint, rightPoint
 
-
+# Algorithm to find the lower tangent, r: left and right point of final tangent line
 def lowerTangent(left, right):
+    # Find the leftmost of the right hull and the rightmost point of the left hull
     leftPoint = left[-1]
     rightPoint = right[0]
     
+    # Determine if points form a right turn, shift pointer to next point accordingly, "walking" the line down
     while True:
         if turn(leftPoint, rightPoint, rightPoint.ccwPoint) == RIGHT_TURN:
             rightPoint = rightPoint.ccwPoint
@@ -298,27 +303,34 @@ def lowerTangent(left, right):
             break
     return leftPoint, rightPoint
 
-def removePointers(points):   
+# Uses global variables defined earlier to walk through hull and remove pointers of points not in hull
+def removePointers(points):
+    
+    # Global variables from when tangent points were defined and a set for points in hull   
     upL, upR, lowL, lowR = hull_final[0], hull_final[1], hull_final[2], hull_final[3]
     hullPoints = set()
 
+    # Walk through right side of the hull and add points to set
     point = upR
     while point != lowR:
         hullPoints.add(point)
         point = point.cwPoint
     hullPoints.add(lowR)
 
+    # Walk through left side of the hull and add points to set
     point = upL
     while point != lowL:
         hullPoints.add(point)
         point = point.ccwPoint
     hullPoints.add(lowL)
 
+    # Remove pointers of points not in hull
     for point in allPoints:
         if point not in hullPoints:
             point.ccwPoint = None
             point.cwPoint = None
 
+    # Display the final result
     display()
     
 
@@ -506,7 +518,8 @@ def main():
     allPoints.sort( key=lambda p: (p.x,p.y) )
 
     # Run the code
-    
+    #
+    # Updated this to remove pointers of points not on the hull after hull function has been called
     removePointers(buildHull( allPoints ))
     
     # Wait to exit
