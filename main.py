@@ -167,37 +167,49 @@ def turn( a, b, c ):
 # Build a convex hull from a set of point
 #
 # Use the method described in class
-
-
 def buildHull( points ):
 
     # Check cases
+    if not points:
+        
+        # No points: return empty hull
+        return []
 
     if len(points) == 3:
 
         # Base case of 3 points: make a hull
         
-        # [YOUR CODE HERE]
-      
+        p1, p2, p3 = points[0], points[1], points[2]
+        if turn(p1, p2, p3) == LEFT_TURN: #p1 -> p2 -> p3 -> p1 Counterclockwise
+            p1.ccwPoint, p2.ccwPoint, p3.ccwPoint = p2, p3, p1
+            p1.cwPoint, p2.cwPoint, p3.cwPoint = p3, p1, p2
+        elif turn(p1, p2, p3) == RIGHT_TURN: #p1 -> p2 -> p3 -> p1 Clockwise
+            p1.ccwPoint, p2.ccwPoint, p3.ccwPoint = p3, p1, p2
+            p1.cwPoint, p2.cwPoint, p3.cwPoint = p2, p3, p1
+        else:
+            p1.ccwPoint, p1.cwPoint = p2, p2
+            p3.ccwPoint, p3.cwPoint = p2, p2
+            p2.ccwPoint, p2.cwPoint = p1, p3
+
         pass
 
     elif len(points) == 2:
 
         # Base case of 2 points: make a hull
+        p1, p2 = points[0], points[1]
+        p1.ccwPoint, p2.ccwPoint = p2, p1
+        p1.cwPoint, p2.cwPoint = p2, p1
 
-        # [YOUR CODE HERE]
-      
-        pass
-
+        pass 
     else:
 
         # Recurse to build left and right hull
-
-        # [YOUR CODE HERE]
-      
-        pass
-
- 
+        mid = len(points) // 2
+        leftHull = points[:mid]
+        rightHull = points[mid:]
+        buildHull(leftHull)
+        buildHull(rightHull)
+        
         # You can do the following to help in debugging.  The code
         # below highlights all the points, then shows them, then
         # pauses until you press 'p'.  While paused, you can click on
@@ -217,9 +229,7 @@ def buildHull( points ):
         display(wait=addPauses)
 
         # Merge the two hulls
-
-        # [YOUR CODE HERE]
-
+        mergeHulls(leftHull, rightHull)
         pass
 
         # Pause to see the result, then remove the highlighting from
@@ -228,14 +238,89 @@ def buildHull( points ):
         display(wait=addPauses)
         for p in points:
             p.highlight = False
+        
+        
 
     # At the very end of buildHull(), you should display the result
     # after every merge, as shown below.  This call to display() does
     # not pause.
     
     display()
+    
+    
+# Merge two hulls
+def mergeHulls(left, right):
+    
+    #Find the upper and lower tangents by calling respective functions
+    upperLeft, upperRight = upperTangent(left, right)
+    lowerLeft, lowerRight = lowerTangent(left, right)
+    
+    #Connect the upper and lower tangents to form the final hull by setting pointers
+    upperLeft.cwPoint = upperRight
+    upperRight.ccwPoint = upperLeft
+    lowerLeft.ccwPoint = lowerRight
+    lowerRight.cwPoint = lowerLeft
+    
+    #global variable that stores the upper left, upper right, lower left and lower right points of the hull used for the tangents
+    global hull_final    
+    hull_final = [upperLeft, upperRight, lowerLeft, lowerRight]
+    
 
-  
+
+def upperTangent(left, right):
+    leftPoint = left[-1]
+    rightPoint = right[0]
+    
+    while True:
+        if turn(leftPoint, rightPoint, rightPoint.cwPoint) == LEFT_TURN:
+            rightPoint = rightPoint.cwPoint
+            
+        elif turn(leftPoint.ccwPoint, leftPoint, rightPoint) == LEFT_TURN:
+            leftPoint = leftPoint.ccwPoint
+            
+        else:
+            break
+    return leftPoint, rightPoint
+
+
+def lowerTangent(left, right):
+    leftPoint = left[-1]
+    rightPoint = right[0]
+    
+    while True:
+        if turn(leftPoint, rightPoint, rightPoint.ccwPoint) == RIGHT_TURN:
+            rightPoint = rightPoint.ccwPoint
+            
+        elif turn(leftPoint.cwPoint, leftPoint, rightPoint) == RIGHT_TURN:
+            leftPoint = leftPoint.cwPoint
+            
+        else:
+            break
+    return leftPoint, rightPoint
+
+def removePointers(points):   
+    upL, upR, lowL, lowR = hull_final[0], hull_final[1], hull_final[2], hull_final[3]
+    hullPoints = set()
+
+    point = upR
+    while point != lowR:
+        hullPoints.add(point)
+        point = point.cwPoint
+    hullPoints.add(lowR)
+
+    point = upL
+    while point != lowL:
+        hullPoints.add(point)
+        point = point.ccwPoint
+    hullPoints.add(lowL)
+
+    for point in allPoints:
+        if point not in hullPoints:
+            point.ccwPoint = None
+            point.cwPoint = None
+
+    display()
+    
 
 windowLeft   = None
 windowRight  = None
@@ -342,7 +427,6 @@ def mouseButtonCallback( window, btn, action, keyModifiers ):
 
         wx = (x-0)/float(windowWidth)  * (windowRight-windowLeft) + windowLeft
         wy = (windowHeight-y)/float(windowHeight) * (windowTop-windowBottom) + windowBottom
-
         minDist = windowRight-windowLeft
         minPoint = None
         for p in allPoints:
@@ -423,8 +507,8 @@ def main():
 
     # Run the code
     
-    buildHull( allPoints )
-
+    removePointers(buildHull( allPoints ))
+    
     # Wait to exit
 
     while not glfw.window_should_close( window ):
